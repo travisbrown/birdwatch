@@ -12,15 +12,48 @@ fn main() -> Result<(), Error> {
         Command::CleanUnknownParticipants {
             aliases,
             unknown_aliases,
+            notes_data,
         } => {
             let aliases = model::ParticipantAliasMapping::read(aliases)?;
             let mut unknown_aliases_values =
                 model::ParticipantNoteIdMapping::read(&unknown_aliases)?;
+            let mut note_entries = model::NoteEntry::read(&notes_data)?;
 
-            unknown_aliases_values
-                .retain(|participant_id, _| !aliases.contains_key(participant_id));
+            unknown_aliases_values.retain(|participant_id, note_ids| {
+                let alias = aliases.get(participant_id);
+
+                if let Some(alias) = alias {
+                    for note_id in note_ids {
+                        match note_entries.get_mut(note_id) {
+                            Some(note_entry) => {
+                                if note_entry
+                                    .alias
+                                    .as_ref()
+                                    .filter(|note_alias| *note_alias != alias)
+                                    .is_some()
+                                {
+                                    ::log::error!(
+                                        "Alias changed (note ID: {}): {}, {}",
+                                        note_id,
+                                        note_entry.alias.as_ref().unwrap(),
+                                        alias,
+                                    );
+                                }
+
+                                note_entry.alias = Some(alias.clone());
+                            }
+                            None => {
+                                ::log::error!("Missing note entry: {}", note_id);
+                            }
+                        }
+                    }
+                }
+
+                alias.is_none()
+            });
 
             model::ParticipantNoteIdMapping::write(unknown_aliases, unknown_aliases_values)?;
+            model::NoteEntry::write(notes_data, note_entries)?;
         }
         Command::UpdateNoteStatusHistory {
             aliases,
@@ -209,6 +242,8 @@ enum Command {
         aliases: PathBuf,
         #[clap(long, default_value = "workspace/unknown-aliases.csv")]
         unknown_aliases: PathBuf,
+        #[clap(long, default_value = "data/notes/")]
+        notes_data: PathBuf,
     },
     UpdateNoteStatusHistory {
         #[clap(long, default_value = "data/aliases.csv")]
