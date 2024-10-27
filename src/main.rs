@@ -1,6 +1,6 @@
 use cli_helpers::prelude::*;
 use model::{source::NoteStatusHistoryEntry, Classification, NoteEntry};
-use std::path::PathBuf;
+use std::{collections::HashMap, path::PathBuf};
 
 mod model;
 
@@ -146,6 +146,32 @@ fn main() -> Result<(), Error> {
             model::NoteEntry::write(notes_data, note_entries)?;
             model::ParticipantNoteIdMapping::write(unknown_aliases, unknown_aliases_values)?;
         }
+        Command::UpdateAliases {
+            aliases,
+            unknown_aliases,
+            new_aliases,
+        } => {
+            let mut aliases_values = model::ParticipantAliasMapping::read(&aliases)?;
+            let unknown_aliases_values = model::ParticipantNoteIdMapping::read(&unknown_aliases)?;
+            let new_alias_mappings = model::NoteIdAliasMapping::read(new_aliases)?;
+
+            let unknown_alias_note_ids = unknown_aliases_values
+                .iter()
+                .flat_map(|(participant_id, note_ids)| {
+                    note_ids
+                        .iter()
+                        .map(|note_id| (*note_id, participant_id.clone()))
+                })
+                .collect::<HashMap<_, _>>();
+
+            for (note_id, alias) in new_alias_mappings {
+                if let Some(participant_id) = unknown_alias_note_ids.get(&note_id) {
+                    aliases_values.insert(participant_id.clone(), alias);
+                }
+            }
+
+            model::ParticipantAliasMapping::write(aliases, aliases_values)?;
+        }
     }
 
     Ok(())
@@ -203,5 +229,13 @@ enum Command {
         notes_data: PathBuf,
         #[clap(long)]
         notes: PathBuf,
+    },
+    UpdateAliases {
+        #[clap(long, default_value = "data/aliases.csv")]
+        aliases: PathBuf,
+        #[clap(long, default_value = "workspace/unknown-aliases.csv")]
+        unknown_aliases: PathBuf,
+        #[clap(long)]
+        new_aliases: PathBuf,
     },
 }

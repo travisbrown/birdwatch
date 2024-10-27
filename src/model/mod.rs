@@ -23,7 +23,7 @@ pub enum Classification {
     Misleading,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, serde::Deserialize, serde::Serialize)]
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd, serde::Deserialize, serde::Serialize)]
 pub struct ParticipantAliasMapping {
     pub participant_id: String,
     pub alias: String,
@@ -36,8 +36,8 @@ impl ParticipantAliasMapping {
             .from_reader(File::open(path)?);
         let mut mappings = HashMap::new();
 
-        for mapping in reader.deserialize::<ParticipantAliasMapping>() {
-            let ParticipantAliasMapping {
+        for mapping in reader.deserialize::<Self>() {
+            let Self {
                 participant_id,
                 alias,
             } = mapping?;
@@ -53,6 +53,31 @@ impl ParticipantAliasMapping {
         }
 
         Ok(mappings)
+    }
+
+    pub fn write<P: AsRef<Path>>(
+        path: P,
+        values: HashMap<String, String>,
+    ) -> Result<(), crate::Error> {
+        let mut values = values
+            .into_iter()
+            .map(|(participant_id, alias)| Self {
+                participant_id,
+                alias,
+            })
+            .collect::<Vec<_>>();
+
+        values.sort();
+
+        let mut writer = csv::WriterBuilder::new()
+            .has_headers(false)
+            .from_writer(File::create(path)?);
+
+        for value in values {
+            writer.serialize(value)?;
+        }
+
+        Ok(writer.flush()?)
     }
 }
 
@@ -209,5 +234,35 @@ impl NoteEntry {
         }
 
         Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, serde::Deserialize, serde::Serialize)]
+pub struct NoteIdAliasMapping {
+    pub note_id: u64,
+    pub alias: String,
+}
+
+impl NoteIdAliasMapping {
+    pub fn read<P: AsRef<Path>>(path: P) -> Result<HashMap<u64, String>, crate::Error> {
+        let mut reader = csv::ReaderBuilder::new()
+            .has_headers(false)
+            .from_reader(File::open(path)?);
+        let mut mappings = HashMap::new();
+
+        for mapping in reader.deserialize::<Self>() {
+            let Self { note_id, alias } = mapping?;
+
+            match mappings.entry(note_id) {
+                Entry::Occupied(_) => {
+                    return Err(crate::Error::DuplicateNote(note_id));
+                }
+                Entry::Vacant(entry) => {
+                    entry.insert(alias);
+                }
+            }
+        }
+
+        Ok(mappings)
     }
 }
