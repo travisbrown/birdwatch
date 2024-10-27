@@ -205,6 +205,36 @@ fn main() -> Result<(), Error> {
 
             model::ParticipantAliasMapping::write(aliases, aliases_values)?;
         }
+        Command::UpdateTweetUsers {
+            notes_data,
+            new_tweet_users,
+        } => {
+            let new_tweet_user_mappings = model::TweetIdUserIdMapping::read(new_tweet_users)?;
+            let mut note_entries = model::NoteEntry::read(&notes_data)?;
+
+            for (note_id, note_entry) in &mut note_entries {
+                if let Some(tweet_id) = note_entry.tweet_id {
+                    if let Some(user_id) = new_tweet_user_mappings.get(&tweet_id) {
+                        if note_entry
+                            .user_id
+                            .filter(|note_user_id| *note_user_id != *user_id)
+                            .is_some()
+                        {
+                            ::log::error!(
+                                "User ID changed (note ID: {}): {}, {:?}",
+                                note_id,
+                                note_entry.user_id.unwrap(),
+                                user_id,
+                            );
+                        }
+
+                        note_entry.user_id = Some(*user_id);
+                    }
+                }
+            }
+
+            model::NoteEntry::write(notes_data, note_entries)?;
+        }
     }
 
     Ok(())
@@ -224,6 +254,8 @@ pub enum Error {
     DuplicateNote(u64),
     #[error("Invalid millisecond timestamp")]
     InvalidTimestamp(u64),
+    #[error("Duplicate tweet user")]
+    DuplicateTweetUser(u64),
 }
 
 #[derive(Debug, Parser)]
@@ -272,5 +304,11 @@ enum Command {
         unknown_aliases: PathBuf,
         #[clap(long)]
         new_aliases: PathBuf,
+    },
+    UpdateTweetUsers {
+        #[clap(long, default_value = "data/notes/")]
+        notes_data: PathBuf,
+        #[clap(long)]
+        new_tweet_users: PathBuf,
     },
 }

@@ -266,3 +266,33 @@ impl NoteIdAliasMapping {
         Ok(mappings)
     }
 }
+
+#[derive(Clone, Debug, Eq, PartialEq, serde::Deserialize, serde::Serialize)]
+pub struct TweetIdUserIdMapping {
+    pub tweet_id: u64,
+    pub user_id: u64,
+}
+
+impl TweetIdUserIdMapping {
+    pub fn read<P: AsRef<Path>>(path: P) -> Result<HashMap<u64, u64>, crate::Error> {
+        let mut reader = csv::ReaderBuilder::new()
+            .has_headers(false)
+            .from_reader(File::open(path)?);
+        let mut mappings = HashMap::new();
+
+        for mapping in reader.deserialize::<Self>() {
+            let Self { tweet_id, user_id } = mapping?;
+
+            match mappings.entry(tweet_id) {
+                Entry::Occupied(_) => {
+                    return Err(crate::Error::DuplicateTweetUser(tweet_id));
+                }
+                Entry::Vacant(entry) => {
+                    entry.insert(user_id);
+                }
+            }
+        }
+
+        Ok(mappings)
+    }
+}
