@@ -1,5 +1,5 @@
 use cli_helpers::prelude::*;
-use model::{NoteEntry, NoteStatusHistoryEntry};
+use model::{source::NoteStatusHistoryEntry, Classification, NoteEntry};
 use std::path::PathBuf;
 
 mod model;
@@ -25,17 +25,14 @@ fn main() -> Result<(), Error> {
         Command::UpdateNoteStatusHistory {
             aliases,
             unknown_aliases,
-            notes,
+            notes_data,
             note_status_history,
         } => {
             let aliases = model::ParticipantAliasMapping::read(aliases)?;
             let mut unknown_aliases_values =
                 model::ParticipantNoteIdMapping::read(&unknown_aliases)?;
-            let note_status_history = model::NoteStatusHistoryEntry::read(note_status_history)?;
-
-            ::log::info!("{}", note_status_history.len());
-
-            let mut note_entries = model::NoteEntry::read(&notes)?;
+            let note_status_history = NoteStatusHistoryEntry::read(note_status_history)?;
+            let mut note_entries = model::NoteEntry::read(&notes_data)?;
 
             for NoteStatusHistoryEntry {
                 note_id,
@@ -69,7 +66,84 @@ fn main() -> Result<(), Error> {
                 }
             }
 
-            model::NoteEntry::write(notes, note_entries)?;
+            model::NoteEntry::write(notes_data, note_entries)?;
+            model::ParticipantNoteIdMapping::write(unknown_aliases, unknown_aliases_values)?;
+        }
+        Command::UpdateNotes {
+            aliases,
+            unknown_aliases,
+            notes_data,
+            notes,
+        } => {
+            let aliases = model::ParticipantAliasMapping::read(aliases)?;
+            let mut unknown_aliases_values =
+                model::ParticipantNoteIdMapping::read(&unknown_aliases)?;
+            let note_status_history = model::source::NoteEntry::read(notes)?;
+            let mut note_entries = model::NoteEntry::read(&notes_data)?;
+
+            for model::source::NoteEntry {
+                note_id,
+                participant_id,
+                created_at_ms,
+                tweet_id,
+                classification,
+            } in note_status_history.values()
+            {
+                let entry = note_entries.entry(*note_id).or_insert(NoteEntry {
+                    note_id: *note_id,
+                    created_at_ms: 0,
+                    alias: None,
+                    tweet_id: None,
+                    user_id: None,
+                    misleading: None,
+                    helpful: None,
+                });
+
+                if entry
+                    .tweet_id
+                    .filter(|entry_tweet_id| entry_tweet_id != tweet_id)
+                    .is_some()
+                {
+                    ::log::error!(
+                        "Tweet ID changed (note ID: {}): {}, {}",
+                        note_id,
+                        entry.tweet_id.unwrap(),
+                        tweet_id,
+                    );
+                }
+
+                if entry
+                    .misleading
+                    .filter(|entry_misleading| {
+                        *entry_misleading != (*classification == Classification::Misleading)
+                    })
+                    .is_some()
+                {
+                    ::log::error!(
+                        "Classification changed (note ID: {}): {}, {:?}",
+                        note_id,
+                        entry.misleading.unwrap(),
+                        classification,
+                    );
+                }
+
+                entry.created_at_ms = *created_at_ms;
+                entry.alias = aliases.get(participant_id).cloned();
+                entry.tweet_id = Some(*tweet_id);
+                entry.misleading = Some(*classification == Classification::Misleading);
+
+                if entry.alias.is_none() {
+                    let entries = unknown_aliases_values
+                        .entry(participant_id.clone())
+                        .or_default();
+
+                    entries.push(*note_id);
+                    entries.sort();
+                    entries.dedup();
+                }
+            }
+
+            model::NoteEntry::write(notes_data, note_entries)?;
             model::ParticipantNoteIdMapping::write(unknown_aliases, unknown_aliases_values)?;
         }
     }
@@ -87,10 +161,8 @@ pub enum Error {
     LogInitialization(#[from] cli_helpers::Error),
     #[error("Duplicate alias mapping")]
     DuplicateAliasMapping(String, String),
-    #[error("Duplicate note status history entry")]
-    DuplicateNoteStatusHistoryEntry(u64),
-    #[error("Duplicate note entry")]
-    DuplicateNoteEntry(u64),
+    #[error("Duplicate note value")]
+    DuplicateNote(u64),
     #[error("Invalid millisecond timestamp")]
     InvalidTimestamp(u64),
 }
@@ -118,8 +190,18 @@ enum Command {
         #[clap(long, default_value = "workspace/unknown-aliases.csv")]
         unknown_aliases: PathBuf,
         #[clap(long, default_value = "data/notes/")]
-        notes: PathBuf,
+        notes_data: PathBuf,
         #[clap(long)]
         note_status_history: PathBuf,
+    },
+    UpdateNotes {
+        #[clap(long, default_value = "data/aliases.csv")]
+        aliases: PathBuf,
+        #[clap(long, default_value = "workspace/unknown-aliases.csv")]
+        unknown_aliases: PathBuf,
+        #[clap(long, default_value = "data/notes/")]
+        notes_data: PathBuf,
+        #[clap(long)]
+        notes: PathBuf,
     },
 }

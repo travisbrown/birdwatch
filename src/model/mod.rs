@@ -1,8 +1,27 @@
 use itertools::Itertools;
-use std::collections::hash_map::Entry;
-use std::collections::HashMap;
+use std::collections::{hash_map::Entry, HashMap};
 use std::fs::File;
 use std::path::Path;
+
+pub mod source;
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq, serde::Deserialize, serde::Serialize)]
+pub enum Status {
+    #[serde(rename = "NEEDS_MORE_RATINGS")]
+    NeedsMoreRatings,
+    #[serde(rename = "CURRENTLY_RATED_NOT_HELPFUL")]
+    NotHelpful,
+    #[serde(rename = "CURRENTLY_RATED_HELPFUL")]
+    Helpful,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq, serde::Deserialize, serde::Serialize)]
+pub enum Classification {
+    #[serde(rename = "NOT_MISLEADING")]
+    NotMisleading,
+    #[serde(rename = "MISINFORMED_OR_POTENTIALLY_MISLEADING")]
+    Misleading,
+}
 
 #[derive(Clone, Debug, Eq, PartialEq, serde::Deserialize, serde::Serialize)]
 pub struct ParticipantAliasMapping {
@@ -11,7 +30,7 @@ pub struct ParticipantAliasMapping {
 }
 
 impl ParticipantAliasMapping {
-    pub fn read<P: AsRef<Path>>(path: P) -> Result<HashMap<String, String>, super::Error> {
+    pub fn read<P: AsRef<Path>>(path: P) -> Result<HashMap<String, String>, crate::Error> {
         let mut reader = csv::ReaderBuilder::new()
             .has_headers(false)
             .from_reader(File::open(path)?);
@@ -25,7 +44,7 @@ impl ParticipantAliasMapping {
 
             match mappings.entry(participant_id.clone()) {
                 Entry::Occupied(_) => {
-                    return Err(super::Error::DuplicateAliasMapping(participant_id, alias));
+                    return Err(crate::Error::DuplicateAliasMapping(participant_id, alias));
                 }
                 Entry::Vacant(entry) => {
                     entry.insert(alias);
@@ -44,7 +63,7 @@ pub struct ParticipantNoteIdMapping {
 }
 
 impl ParticipantNoteIdMapping {
-    pub fn read<P: AsRef<Path>>(path: P) -> Result<HashMap<String, Vec<u64>>, super::Error> {
+    pub fn read<P: AsRef<Path>>(path: P) -> Result<HashMap<String, Vec<u64>>, crate::Error> {
         let mut reader = csv::ReaderBuilder::new()
             .has_headers(false)
             .from_reader(File::open(path)?);
@@ -68,7 +87,7 @@ impl ParticipantNoteIdMapping {
     pub fn write<P: AsRef<Path>>(
         path: P,
         values: HashMap<String, Vec<u64>>,
-    ) -> Result<(), super::Error> {
+    ) -> Result<(), crate::Error> {
         let mut values = values
             .into_iter()
             .flat_map(|(participant_id, note_ids)| {
@@ -93,16 +112,6 @@ impl ParticipantNoteIdMapping {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, serde::Deserialize, serde::Serialize)]
-pub enum Status {
-    #[serde(rename = "NEEDS_MORE_RATINGS")]
-    NeedsMoreRatings,
-    #[serde(rename = "CURRENTLY_RATED_NOT_HELPFUL")]
-    NotHelpful,
-    #[serde(rename = "CURRENTLY_RATED_HELPFUL")]
-    Helpful,
-}
-
 impl Status {
     pub fn is_helpful(&self) -> Option<bool> {
         match self {
@@ -110,45 +119,6 @@ impl Status {
             Self::NotHelpful => Some(false),
             Self::Helpful => Some(true),
         }
-    }
-}
-
-#[derive(Clone, Debug, Eq, PartialEq, serde::Deserialize)]
-pub struct NoteStatusHistoryEntry {
-    #[serde(rename = "noteId")]
-    pub note_id: u64,
-    #[serde(rename = "noteAuthorParticipantId")]
-    pub participant_id: String,
-    #[serde(rename = "createdAtMillis")]
-    pub created_at_ms: u64,
-    #[serde(rename = "currentStatus")]
-    pub current_status: Status,
-}
-
-impl NoteStatusHistoryEntry {
-    pub fn read<P: AsRef<Path>>(path: P) -> Result<HashMap<u64, Self>, super::Error> {
-        let mut reader = csv::ReaderBuilder::new()
-            .has_headers(true)
-            .delimiter(b'\t')
-            .from_reader(File::open(path)?);
-        let mut entries = HashMap::new();
-
-        for entry in reader.deserialize::<Self>() {
-            let note_status_history_entry = entry?;
-
-            match entries.entry(note_status_history_entry.note_id) {
-                Entry::Occupied(_) => {
-                    return Err(super::Error::DuplicateNoteStatusHistoryEntry(
-                        note_status_history_entry.note_id,
-                    ));
-                }
-                Entry::Vacant(entry) => {
-                    entry.insert(note_status_history_entry);
-                }
-            }
-        }
-
-        Ok(entries)
     }
 }
 
@@ -171,10 +141,10 @@ pub struct NoteEntry {
 }
 
 impl NoteEntry {
-    pub fn read<P: AsRef<Path>>(path: P) -> Result<HashMap<u64, Self>, super::Error> {
+    pub fn read<P: AsRef<Path>>(path: P) -> Result<HashMap<u64, Self>, crate::Error> {
         let mut paths = std::fs::read_dir(&path)?
-            .map(|entry| Ok(entry.map_err(super::Error::from)?.path()))
-            .collect::<Result<Vec<_>, super::Error>>()?;
+            .map(|entry| Ok(entry.map_err(crate::Error::from)?.path()))
+            .collect::<Result<Vec<_>, crate::Error>>()?;
 
         paths.sort();
 
@@ -190,7 +160,7 @@ impl NoteEntry {
 
                 match entries.entry(note_entry.note_id) {
                     Entry::Occupied(_) => {
-                        return Err(super::Error::DuplicateNoteEntry(note_entry.note_id));
+                        return Err(crate::Error::DuplicateNote(note_entry.note_id));
                     }
                     Entry::Vacant(entry) => {
                         entry.insert(note_entry);
@@ -202,19 +172,19 @@ impl NoteEntry {
         Ok(entries)
     }
 
-    pub fn write<P: AsRef<Path>>(path: P, values: HashMap<u64, Self>) -> Result<(), super::Error> {
+    pub fn write<P: AsRef<Path>>(path: P, values: HashMap<u64, Self>) -> Result<(), crate::Error> {
         let mut values = values
             .values()
             .map(|note_entry| {
                 let timestamp =
                     chrono::DateTime::from_timestamp_millis(note_entry.created_at_ms as i64)
-                        .ok_or_else(|| super::Error::InvalidTimestamp(note_entry.created_at_ms))?;
+                        .ok_or_else(|| crate::Error::InvalidTimestamp(note_entry.created_at_ms))?;
 
                 let month = timestamp.format("%Y-%m").to_string();
 
                 Ok((month, note_entry))
             })
-            .collect::<Result<Vec<_>, super::Error>>()?;
+            .collect::<Result<Vec<_>, crate::Error>>()?;
 
         values.sort();
 
