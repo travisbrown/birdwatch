@@ -1,4 +1,4 @@
-Note ID,Timestamp,Alias,Tweet ID,User ID,Misleading,Accepted
+Note ID,Created at,Alias,Tweet ID,User ID,Misleading,Helpful
 1609338991085600768,1672531290207,cordial-passionfruit-hornbill,1609337486538334208,,true,
 1609352150689402880,1672534427697,miraculous-bonsai-kingfisher,1608591424085278720,,true,
 1609353805354631169,1672534822203,academic-fir-pigeon,1609017624825839619,1420914634568212480,true,

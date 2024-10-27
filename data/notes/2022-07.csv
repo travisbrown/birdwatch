@@ -1,4 +1,4 @@
-Note ID,Timestamp,Alias,Tweet ID,User ID,Misleading,Accepted
+Note ID,Created at,Alias,Tweet ID,User ID,Misleading,Helpful
 1542659672506785793,1656633701814,uplifting-moon-mockingbird,1542496421160665088,52949830,false,
 1542659835056910336,1656633740575,considerate-sun-goldfinch,1542516506373697544,15646547,true,
 1542661929801588736,1656634239996,noble-olive-hummingbird,1406618105950900224,1917731,true,

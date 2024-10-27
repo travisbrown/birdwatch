@@ -1,4 +1,4 @@
-Note ID,Timestamp,Alias,Tweet ID,User ID,Misleading,Accepted
+Note ID,Created at,Alias,Tweet ID,User ID,Misleading,Helpful
 1399551213394223110,1622513986336,,,,,
 1399562434797522949,1622516661724,smart-citrus-condor,1399553882649501700,,true,
 1399562935551279107,1622516781113,smart-citrus-condor,1399418643465789449,,true,

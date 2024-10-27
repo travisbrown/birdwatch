@@ -1,4 +1,4 @@
-Note ID,Timestamp,Alias,Tweet ID,User ID,Misleading,Accepted
+Note ID,Created at,Alias,Tweet ID,User ID,Misleading,Helpful
 1465849937711665152,1638320833979,skilled-sunlight-frigatebird,1465848203912400897,,true,
 1465857390037848068,1638322610757,,,,,
 1465862409046872064,1638323807382,extraordinary-star-cormorant,1465732264151564289,14486697,true,

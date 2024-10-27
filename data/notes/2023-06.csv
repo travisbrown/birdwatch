@@ -1,4 +1,4 @@
-Note ID,Timestamp,Alias,Tweet ID,User ID,Misleading,Accepted
+Note ID,Created at,Alias,Tweet ID,User ID,Misleading,Helpful
 1664059492290514944,1685577674352,,1663925428963229697,,false,
 1664059714894798850,1685577727423,thriving-raspberry-quail,1663455363193077761,,true,
 1664060263945977861,1685577858328,humble-sand-raven,1664000050136064001,939091,false,

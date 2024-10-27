@@ -1,4 +1,4 @@
-Note ID,Timestamp,Alias,Tweet ID,User ID,Misleading,Accepted
+Note ID,Created at,Alias,Tweet ID,User ID,Misleading,Helpful
 1356030119899500549,1612137749063,exquisite-strawberry-stork,1355988725830885376,1243560408025198593,true,
 1356030666010464257,1612137879266,,,,,
 1356032890665111552,1612138409665,elegant-forest-goose,1355986963174715405,,true,

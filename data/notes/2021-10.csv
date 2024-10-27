@@ -1,4 +1,4 @@
-Note ID,Timestamp,Alias,Tweet ID,User ID,Misleading,Accepted
+Note ID,Created at,Alias,Tweet ID,User ID,Misleading,Helpful
 1443732472382963756,1633047619324,jazzy-sandalwood-penguin,1443431268511887363,90954365,true,
 1443732581241929760,1633047645279,jazzy-sandalwood-penguin,1443365848387883011,90954365,true,
 1443732830228557824,1633047704645,terrific-coast-gull,1443324260089573380,719008688556662784,true,false

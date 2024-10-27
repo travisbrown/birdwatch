@@ -1,4 +1,4 @@
-Note ID,Timestamp,Alias,Tweet ID,User ID,Misleading,Accepted
+Note ID,Created at,Alias,Tweet ID,User ID,Misleading,Helpful
 1620574552702205952,1675210056839,polite-tomato-partridge,1620497911636443136,195717987,true,
 1620577895268622341,1675210853772,thoughtful-moss-pigeon,,,,
 1620578047605760003,1675210890091,prodigious-pond-rooster,1617223789124718601,1262182550656757768,true,

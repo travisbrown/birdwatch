@@ -1,4 +1,4 @@
-Note ID,Timestamp,Alias,Tweet ID,User ID,Misleading,Accepted
+Note ID,Created at,Alias,Tweet ID,User ID,Misleading,Helpful
 1553895109975953408,1659312438851,gracious-grove-gull,1553349573426515968,744281884310405120,true,
 1553899070602678274,1659313383137,insightful-valley-rooster,1553575010161360897,,true,
 1553906875619590145,1659315243999,modern-bonsai-sparrow,1553804789527351297,,true,

@@ -1,4 +1,4 @@
-Note ID,Timestamp,Alias,Tweet ID,User ID,Misleading,Accepted
+Note ID,Created at,Alias,Tweet ID,User ID,Misleading,Helpful
 1352796878438424576,1611366884227,,,,,
 1353415873227177985,1611514464087,,,,,
 1354586938863443971,1611793667892,resourceful-lychee-partridge,1354585812722085890,1319036828964454402,true,

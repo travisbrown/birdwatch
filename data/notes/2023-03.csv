@@ -1,4 +1,4 @@
-Note ID,Timestamp,Alias,Tweet ID,User ID,Misleading,Accepted
+Note ID,Created at,Alias,Tweet ID,User ID,Misleading,Helpful
 1630719535274950656,1677628809171,composed-sandalwood-pheasant,1630651899153096715,1344356576786866176,true,true
 1630720954086330368,1677629147442,devoted-pear-hawk,,,,
 1630721411055783938,1677629256392,devoted-pear-hawk,1630323749550690304,292929271,true,

@@ -1,4 +1,4 @@
-Note ID,Timestamp,Alias,Tweet ID,User ID,Misleading,Accepted
+Note ID,Created at,Alias,Tweet ID,User ID,Misleading,Helpful
 1587234166797750273,1667261089409,,,,,
 1587237145101549568,1667261799489,interesting-pine-emu,1586575304499281922,1460348377019957249,true,
 1587237767397969920,1667261947857,exquisite-hazelnut-goldfinch,,,,

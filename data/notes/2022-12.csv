@@ -1,4 +1,4 @@
-Note ID,Timestamp,Alias,Tweet ID,User ID,Misleading,Accepted
+Note ID,Created at,Alias,Tweet ID,User ID,Misleading,Helpful
 1598104850121691136,1669852862277,jazzy-lake-hummingbird,1598002755381010432,,true,true
 1598106552757534720,1669853268221,philosophical-honeydew-mockingbird,1598002755381010432,,true,true
 1598117526117941248,1669855884474,personable-grove-duck,1597989570729369600,37445714,true,

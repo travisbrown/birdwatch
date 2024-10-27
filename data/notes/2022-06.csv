@@ -1,4 +1,4 @@
-Note ID,Timestamp,Alias,Tweet ID,User ID,Misleading,Accepted
+Note ID,Created at,Alias,Tweet ID,User ID,Misleading,Helpful
 1531791993914789888,1654042645325,genuine-highland-owl,1529220016746516481,,true,
 1531792580815466496,1654042785252,genuine-highland-owl,1529224831761252355,,true,true
 1531794308235268096,1654043197102,efficient-park-pigeon,,,,

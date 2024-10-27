@@ -1,4 +1,4 @@
-Note ID,Timestamp,Alias,Tweet ID,User ID,Misleading,Accepted
+Note ID,Created at,Alias,Tweet ID,User ID,Misleading,Helpful
 1565131073566416896,1661991301325,outgoing-sunlight-cardinal,1564996814750638080,778763106289758208,true,
 1565132012033277957,1661991525073,phenomenal-rose-rooster,1565090122898542592,939091,true,
 1565133215018385411,1661991811887,cosmic-acorn-hornbill,1565085151318745089,1258722842,true,true

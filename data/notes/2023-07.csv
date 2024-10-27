@@ -1,4 +1,4 @@
-Note ID,Timestamp,Alias,Tweet ID,User ID,Misleading,Accepted
+Note ID,Created at,Alias,Tweet ID,User ID,Misleading,Helpful
 1674930829317767168,1688169603077,smart-banana-dove,1581426023601537024,609682920,false,
 1674931056666112000,1688169657282,perceptive-riverbank-canary,1674834695354187786,1500129642,true,
 1674932018847662082,1688169886684,confident-forest-woodpecker,1674583876516102145,,true,

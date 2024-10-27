@@ -1,4 +1,4 @@
-Note ID,Timestamp,Alias,Tweet ID,User ID,Misleading,Accepted
+Note ID,Created at,Alias,Tweet ID,User ID,Misleading,Helpful
 1377421316639223809,1617237807794,,,,,
 1377422944994000896,1617238196025,legendary-peachtree-kingfisher,1376753301014732803,65497475,true,
 1377423206139723777,1617238258289,academic-grape-sandpiper,1376984397962960899,1089254044907040769,true,

@@ -1,4 +1,4 @@
-Note ID,Timestamp,Alias,Tweet ID,User ID,Misleading,Accepted
+Note ID,Created at,Alias,Tweet ID,User ID,Misleading,Helpful
 1509686082773913600,1648772185401,winning-beach-turkey,1509578610352570369,2467791,true,
 1509686565236350978,1648772300431,modern-branch-nightingale,1509673164451852295,1917731,true,
 1509703106916864000,1648776244273,enthralling-river-kingfisher,1509595135285334027,55329156,false,
