@@ -296,3 +296,30 @@ impl TweetIdUserIdMapping {
         Ok(mappings)
     }
 }
+
+#[derive(Clone, Debug, Eq, PartialEq, serde::Deserialize, serde::Serialize)]
+pub struct UserIdScreenNameMapping {
+    pub user_id: u64,
+    pub screen_name: String,
+}
+
+impl UserIdScreenNameMapping {
+    pub fn read<P: AsRef<Path>>(path: P) -> Result<HashMap<u64, String>, crate::Error> {
+        let mut reader = csv::ReaderBuilder::new()
+            .has_headers(false)
+            .from_reader(File::open(path)?);
+        let mut mappings = HashMap::new();
+
+        for mapping in reader.deserialize::<Self>() {
+            let Self {
+                user_id,
+                screen_name,
+            } = mapping?;
+
+            // If the screen name has changed, we use the latest one.
+            mappings.insert(user_id, screen_name);
+        }
+
+        Ok(mappings)
+    }
+}

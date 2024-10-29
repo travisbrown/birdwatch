@@ -235,6 +235,75 @@ fn main() -> Result<(), Error> {
 
             model::NoteEntry::write(notes_data, note_entries)?;
         }
+        Command::UserReport {
+            notes_data,
+            screen_names,
+            cutoff,
+        } => {
+            #[derive(Default)]
+            struct Counts {
+                helpful: usize,
+                not_helpful: usize,
+                needs_more_ratings: usize,
+            }
+
+            impl Counts {
+                fn total(&self) -> usize {
+                    self.helpful + self.not_helpful + self.needs_more_ratings
+                }
+            }
+
+            let note_entries = model::NoteEntry::read(&notes_data)?;
+            let screen_name_mappings = model::UserIdScreenNameMapping::read(screen_names)?;
+
+            let mut user_counts = HashMap::<u64, Counts>::new();
+
+            for note_entry in note_entries.values() {
+                if let Some(user_id) = note_entry.user_id {
+                    let entry = user_counts.entry(user_id).or_default();
+
+                    match note_entry.helpful {
+                        Some(true) => {
+                            entry.helpful += 1;
+                        }
+                        Some(false) => {
+                            entry.not_helpful += 1;
+                        }
+                        None => {
+                            entry.needs_more_ratings += 1;
+                        }
+                    }
+                }
+            }
+
+            let mut user_counts = user_counts.into_iter().collect::<Vec<_>>();
+            user_counts.sort_by_cached_key(|(user_id, counts)| {
+                (std::cmp::Reverse(counts.total()), *user_id)
+            });
+
+            if let Some(cutoff) = cutoff {
+                user_counts.retain(|(_, counts)| counts.total() >= cutoff);
+            }
+
+            for (user_id, counts) in user_counts {
+                let total = counts.total() as f64;
+
+                println!(
+                    "{},{},{},{:.2},{},{:.2},{},{:.2}",
+                    user_id,
+                    screen_name_mappings
+                        .get(&user_id)
+                        .cloned()
+                        .unwrap_or_default(),
+                    counts.helpful,
+                    100.0 * counts.helpful as f64 / total,
+                    counts.not_helpful,
+                    100.0 * counts.not_helpful as f64 / total,
+                    counts.needs_more_ratings,
+                    100.0 * counts.needs_more_ratings as f64 / total,
+                )
+            }
+        }
     }
 
     Ok(())
@@ -310,5 +379,13 @@ enum Command {
         notes_data: PathBuf,
         #[clap(long)]
         new_tweet_users: PathBuf,
+    },
+    UserReport {
+        #[clap(long, default_value = "data/notes/")]
+        notes_data: PathBuf,
+        #[clap(long)]
+        screen_names: PathBuf,
+        #[clap(long)]
+        cutoff: Option<usize>,
     },
 }
