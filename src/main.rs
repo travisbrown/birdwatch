@@ -315,6 +315,8 @@ pub enum Error {
     Io(#[from] std::io::Error),
     #[error("CSV")]
     Csv(#[from] csv::Error),
+    #[error("ZIP error")]
+    Zip(#[from] zip::result::ZipError),
     #[error("Log initialization error")]
     LogInitialization(#[from] cli_helpers::Error),
     #[error("Duplicate alias mapping")]

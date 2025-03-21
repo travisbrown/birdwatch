@@ -17,10 +17,12 @@ pub struct NoteStatusHistoryEntry {
 
 impl NoteStatusHistoryEntry {
     pub fn read<P: AsRef<Path>>(path: P) -> Result<HashMap<u64, Self>, crate::Error> {
+        let mut archive_file = ArchiveFile::open(path)?;
+
         let mut reader = csv::ReaderBuilder::new()
             .has_headers(true)
             .delimiter(b'\t')
-            .from_reader(File::open(path)?);
+            .from_reader(archive_file.reader()?);
         let mut entries = HashMap::new();
 
         for entry in reader.deserialize::<Self>() {
@@ -58,10 +60,12 @@ pub struct NoteEntry {
 
 impl NoteEntry {
     pub fn read<P: AsRef<Path>>(path: P) -> Result<HashMap<u64, Self>, crate::Error> {
+        let mut archive_file = ArchiveFile::open(path)?;
+
         let mut reader = csv::ReaderBuilder::new()
             .has_headers(true)
             .delimiter(b'\t')
-            .from_reader(File::open(path)?);
+            .from_reader(archive_file.reader()?);
         let mut entries = HashMap::new();
 
         for entry in reader.deserialize::<Self>() {
@@ -78,5 +82,34 @@ impl NoteEntry {
         }
 
         Ok(entries)
+    }
+}
+
+pub enum ArchiveFile {
+    Zip(zip::ZipArchive<File>),
+    File(File),
+}
+
+impl ArchiveFile {
+    pub fn open<P: AsRef<Path>>(path: P) -> Result<Self, crate::Error> {
+        let extension = path
+            .as_ref()
+            .extension()
+            .and_then(|extension| extension.to_str());
+
+        let file = File::open(&path)?;
+
+        if extension == Some("zip") {
+            Ok(Self::Zip(zip::ZipArchive::new(file)?))
+        } else {
+            Ok(Self::File(file))
+        }
+    }
+
+    pub fn reader<'a>(&'a mut self) -> Result<Box<dyn std::io::Read + 'a>, crate::Error> {
+        match self {
+            Self::Zip(archive) => Ok(Box::new(archive.by_index(0)?)),
+            Self::File(file) => Ok(Box::new(file)),
+        }
     }
 }

@@ -203,7 +203,7 @@ impl NoteEntry {
             .map(|note_entry| {
                 let timestamp =
                     chrono::DateTime::from_timestamp_millis(note_entry.created_at_ms as i64)
-                        .ok_or_else(|| crate::Error::InvalidTimestamp(note_entry.created_at_ms))?;
+                        .ok_or(crate::Error::InvalidTimestamp(note_entry.created_at_ms))?;
 
                 let month = timestamp.format("%Y-%m").to_string();
 
