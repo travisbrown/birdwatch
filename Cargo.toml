@@ -15,4 +15,4 @@ log = "0.4"
 serde = { version = "1", features = ["derive"] }
 simplelog = "0.12"
 thiserror = "2"
-zip = "2"
+zip = "6"
