@@ -1,5 +1,5 @@
 use itertools::Itertools;
-use std::collections::{hash_map::Entry, HashMap};
+use std::collections::{btree_map::Entry as BEntry, hash_map::Entry as HEntry, HashMap, BTreeMap};
 use std::fs::File;
 use std::path::Path;
 
@@ -43,10 +43,10 @@ impl ParticipantAliasMapping {
             } = mapping?;
 
             match mappings.entry(participant_id.clone()) {
-                Entry::Occupied(_) => {
+                HEntry::Occupied(_) => {
                     return Err(crate::Error::DuplicateAliasMapping(participant_id, alias));
                 }
-                Entry::Vacant(entry) => {
+                HEntry::Vacant(entry) => {
                     entry.insert(alias);
                 }
             }
@@ -166,14 +166,14 @@ pub struct NoteEntry {
 }
 
 impl NoteEntry {
-    pub fn read<P: AsRef<Path>>(path: P) -> Result<HashMap<u64, Self>, crate::Error> {
+    pub fn read<P: AsRef<Path>>(path: P) -> Result<BTreeMap<u64, Self>, crate::Error> {
         let mut paths = std::fs::read_dir(&path)?
             .map(|entry| Ok(entry.map_err(crate::Error::from)?.path()))
             .collect::<Result<Vec<_>, crate::Error>>()?;
 
         paths.sort();
 
-        let mut entries = HashMap::new();
+        let mut entries = BTreeMap::new();
 
         for path in paths {
             let mut reader = csv::ReaderBuilder::new()
@@ -184,10 +184,10 @@ impl NoteEntry {
                 let note_entry = entry?;
 
                 match entries.entry(note_entry.note_id) {
-                    Entry::Occupied(_) => {
+                    BEntry::Occupied(_) => {
                         return Err(crate::Error::DuplicateNote(note_entry.note_id));
                     }
-                    Entry::Vacant(entry) => {
+                    BEntry::Vacant(entry) => {
                         entry.insert(note_entry);
                     }
                 }
@@ -197,7 +197,7 @@ impl NoteEntry {
         Ok(entries)
     }
 
-    pub fn write<P: AsRef<Path>>(path: P, values: &HashMap<u64, Self>) -> Result<(), crate::Error> {
+    pub fn write<P: AsRef<Path>>(path: P, values: &BTreeMap<u64, Self>) -> Result<(), crate::Error> {
         let mut values = values
             .values()
             .map(|note_entry| {
@@ -245,20 +245,20 @@ pub struct NoteIdAliasMapping {
 }
 
 impl NoteIdAliasMapping {
-    pub fn read<P: AsRef<Path>>(path: P) -> Result<HashMap<u64, String>, crate::Error> {
+    pub fn read<P: AsRef<Path>>(path: P) -> Result<BTreeMap<u64, String>, crate::Error> {
         let mut reader = csv::ReaderBuilder::new()
             .has_headers(false)
             .from_reader(File::open(path)?);
-        let mut mappings = HashMap::new();
+        let mut mappings = BTreeMap::new();
 
         for mapping in reader.deserialize::<Self>() {
             let Self { note_id, alias } = mapping?;
 
             match mappings.entry(note_id) {
-                Entry::Occupied(_) => {
+                BEntry::Occupied(_) => {
                     return Err(crate::Error::DuplicateNote(note_id));
                 }
-                Entry::Vacant(entry) => {
+                BEntry::Vacant(entry) => {
                     entry.insert(alias);
                 }
             }
@@ -275,20 +275,20 @@ pub struct TweetIdUserIdMapping {
 }
 
 impl TweetIdUserIdMapping {
-    pub fn read<P: AsRef<Path>>(path: P) -> Result<HashMap<u64, u64>, crate::Error> {
+    pub fn read<P: AsRef<Path>>(path: P) -> Result<BTreeMap<u64, u64>, crate::Error> {
         let mut reader = csv::ReaderBuilder::new()
             .has_headers(false)
             .from_reader(File::open(path)?);
-        let mut mappings = HashMap::new();
+        let mut mappings = BTreeMap::new();
 
         for mapping in reader.deserialize::<Self>() {
             let Self { tweet_id, user_id } = mapping?;
 
             match mappings.entry(tweet_id) {
-                Entry::Occupied(_) => {
+                BEntry::Occupied(_) => {
                     return Err(crate::Error::DuplicateTweetUser(tweet_id));
                 }
-                Entry::Vacant(entry) => {
+                BEntry::Vacant(entry) => {
                     entry.insert(user_id);
                 }
             }
@@ -305,11 +305,11 @@ pub struct UserIdScreenNameMapping {
 }
 
 impl UserIdScreenNameMapping {
-    pub fn read<P: AsRef<Path>>(path: P) -> Result<HashMap<u64, String>, crate::Error> {
+    pub fn read<P: AsRef<Path>>(path: P) -> Result<BTreeMap<u64, String>, crate::Error> {
         let mut reader = csv::ReaderBuilder::new()
             .has_headers(false)
             .from_reader(File::open(path)?);
-        let mut mappings = HashMap::new();
+        let mut mappings = BTreeMap::new();
 
         for mapping in reader.deserialize::<Self>() {
             let Self {
