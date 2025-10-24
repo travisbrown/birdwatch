@@ -102,7 +102,7 @@ impl ParticipantNoteIdMapping {
 
             let entry: &mut Vec<u64> = mappings.entry(participant_id.clone()).or_default();
             entry.push(note_id);
-            entry.sort();
+            entry.sort_unstable();
             entry.dedup();
         }
 
@@ -138,7 +138,7 @@ impl ParticipantNoteIdMapping {
 }
 
 impl Status {
-    pub fn is_helpful(&self) -> Option<bool> {
+    pub const fn is_helpful(self) -> Option<bool> {
         match self {
             Self::NeedsMoreRatings => None,
             Self::NotHelpful => Some(false),
@@ -197,13 +197,14 @@ impl NoteEntry {
         Ok(entries)
     }
 
-    pub fn write<P: AsRef<Path>>(path: P, values: HashMap<u64, Self>) -> Result<(), crate::Error> {
+    pub fn write<P: AsRef<Path>>(path: P, values: &HashMap<u64, Self>) -> Result<(), crate::Error> {
         let mut values = values
             .values()
             .map(|note_entry| {
-                let timestamp =
-                    chrono::DateTime::from_timestamp_millis(note_entry.created_at_ms as i64)
-                        .ok_or(crate::Error::InvalidTimestamp(note_entry.created_at_ms))?;
+                let timestamp = chrono::DateTime::from_timestamp_millis(
+                    i64::try_from(note_entry.created_at_ms).unwrap_or(i64::MAX),
+                )
+                .ok_or(crate::Error::InvalidTimestamp(note_entry.created_at_ms))?;
 
                 let month = timestamp.format("%Y-%m").to_string();
 
@@ -220,7 +221,7 @@ impl NoteEntry {
 
             month_values.sort();
 
-            let month_path = path.as_ref().join(format!("{}.csv", month));
+            let month_path = path.as_ref().join(format!("{month}.csv"));
 
             let mut writer = csv::WriterBuilder::new()
                 .has_headers(true)

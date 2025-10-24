@@ -1,9 +1,12 @@
+#![warn(clippy::all, clippy::pedantic, clippy::nursery, rust_2018_idioms)]
+#![forbid(unsafe_code)]
 use cli_helpers::prelude::*;
 use model::{source::NoteStatusHistoryEntry, Classification, NoteEntry};
 use std::{collections::HashMap, path::PathBuf};
 
 mod model;
 
+#[allow(clippy::too_many_lines)]
 fn main() -> Result<(), Error> {
     let opts: Opts = Opts::parse();
     opts.verbose.init_logging()?;
@@ -43,7 +46,7 @@ fn main() -> Result<(), Error> {
                                 note_entry.alias = Some(alias.clone());
                             }
                             None => {
-                                ::log::error!("Missing note entry: {}", note_id);
+                                ::log::error!("Missing note entry: {note_id}");
                             }
                         }
                     }
@@ -53,7 +56,7 @@ fn main() -> Result<(), Error> {
             });
 
             model::ParticipantNoteIdMapping::write(unknown_aliases, unknown_aliases_values)?;
-            model::NoteEntry::write(notes_data, note_entries)?;
+            model::NoteEntry::write(notes_data, &note_entries)?;
         }
         Command::UpdateNoteStatusHistory {
             aliases,
@@ -94,12 +97,12 @@ fn main() -> Result<(), Error> {
                         .or_default();
 
                     entries.push(*note_id);
-                    entries.sort();
+                    entries.sort_unstable();
                     entries.dedup();
                 }
             }
 
-            model::NoteEntry::write(notes_data, note_entries)?;
+            model::NoteEntry::write(notes_data, &note_entries)?;
             model::ParticipantNoteIdMapping::write(unknown_aliases, unknown_aliases_values)?;
         }
         Command::UpdateNotes {
@@ -171,12 +174,12 @@ fn main() -> Result<(), Error> {
                         .or_default();
 
                     entries.push(*note_id);
-                    entries.sort();
+                    entries.sort_unstable();
                     entries.dedup();
                 }
             }
 
-            model::NoteEntry::write(notes_data, note_entries)?;
+            model::NoteEntry::write(notes_data, &note_entries)?;
             model::ParticipantNoteIdMapping::write(unknown_aliases, unknown_aliases_values)?;
         }
         Command::UpdateAliases {
@@ -233,7 +236,7 @@ fn main() -> Result<(), Error> {
                 }
             }
 
-            model::NoteEntry::write(notes_data, note_entries)?;
+            model::NoteEntry::write(notes_data, &note_entries)?;
         }
         Command::UserReport {
             notes_data,
@@ -248,7 +251,7 @@ fn main() -> Result<(), Error> {
             }
 
             impl Counts {
-                fn total(&self) -> usize {
+                const fn total(&self) -> usize {
                     self.helpful + self.not_helpful + self.needs_more_ratings
                 }
             }
@@ -286,7 +289,7 @@ fn main() -> Result<(), Error> {
             }
 
             for (user_id, counts) in user_counts {
-                let total = counts.total() as f64;
+                let total = counts.total();
 
                 println!(
                     "{},{},{},{:.2},{},{:.2},{},{:.2}",
@@ -296,17 +299,24 @@ fn main() -> Result<(), Error> {
                         .cloned()
                         .unwrap_or_default(),
                     counts.helpful,
-                    100.0 * counts.helpful as f64 / total,
+                    count_percentage(total, counts.helpful)?,
                     counts.not_helpful,
-                    100.0 * counts.not_helpful as f64 / total,
+                    count_percentage(total, counts.not_helpful)?,
                     counts.needs_more_ratings,
-                    100.0 * counts.needs_more_ratings as f64 / total,
-                )
+                    count_percentage(total, counts.needs_more_ratings)?,
+                );
             }
         }
     }
 
     Ok(())
+}
+
+fn count_percentage(total: usize, count: usize) -> Result<f64, Error> {
+    let total = u32::try_from(total).map_err(|_| Error::CountTooLarge(total))?;
+    let count = u32::try_from(count).map_err(|_| Error::CountTooLarge(count))?;
+
+    Ok(f64::from(count) / f64::from(total))
 }
 
 #[derive(thiserror::Error, Debug)]
@@ -327,6 +337,8 @@ pub enum Error {
     InvalidTimestamp(u64),
     #[error("Duplicate tweet user")]
     DuplicateTweetUser(u64),
+    #[error("Count too large")]
+    CountTooLarge(usize),
 }
 
 #[derive(Debug, Parser)]
