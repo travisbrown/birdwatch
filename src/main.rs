@@ -1,10 +1,12 @@
 #![warn(clippy::all, clippy::pedantic, clippy::nursery, rust_2018_idioms)]
 #![forbid(unsafe_code)]
+use birdsite_birdwatch::model::{Classification, NoteEntry, NoteStatusHistoryEntry};
 use cli_helpers::prelude::*;
-use model::{source::NoteStatusHistoryEntry, Classification, NoteEntry};
-use std::{collections::HashMap, path::PathBuf};
+use std::collections::HashMap;
+use std::path::PathBuf;
 
 mod model;
+mod source;
 
 #[allow(clippy::too_many_lines)]
 fn main() -> Result<(), Error> {
@@ -67,19 +69,20 @@ fn main() -> Result<(), Error> {
             let aliases = model::ParticipantAliasMapping::read(aliases)?;
             let mut unknown_aliases_values =
                 model::ParticipantNoteIdMapping::read(&unknown_aliases)?;
-            let note_status_history = NoteStatusHistoryEntry::read(note_status_history)?;
+            let note_status_history =
+                source::read_note_status_history_entries(note_status_history)?;
             let mut note_entries = model::NoteEntry::read(&notes_data)?;
 
             for NoteStatusHistoryEntry {
                 note_id,
                 participant_id,
-                created_at_ms,
+                created_at,
                 current_status,
             } in note_status_history.values()
             {
-                let entry = note_entries.entry(*note_id).or_insert(NoteEntry {
+                let entry = note_entries.entry(*note_id).or_insert(model::NoteEntry {
                     note_id: *note_id,
-                    created_at_ms: 0,
+                    created_at: *created_at,
                     alias: None,
                     tweet_id: None,
                     user_id: None,
@@ -87,13 +90,13 @@ fn main() -> Result<(), Error> {
                     helpful: None,
                 });
 
-                entry.created_at_ms = *created_at_ms;
-                entry.alias = aliases.get(participant_id).cloned();
+                entry.created_at = *created_at;
+                entry.alias = aliases.get(participant_id.as_ref()).cloned();
                 entry.helpful = current_status.is_helpful();
 
                 if entry.alias.is_none() {
                     let entries = unknown_aliases_values
-                        .entry(participant_id.clone())
+                        .entry(participant_id.to_string())
                         .or_default();
 
                     entries.push(*note_id);
@@ -114,20 +117,20 @@ fn main() -> Result<(), Error> {
             let aliases = model::ParticipantAliasMapping::read(aliases)?;
             let mut unknown_aliases_values =
                 model::ParticipantNoteIdMapping::read(&unknown_aliases)?;
-            let note_status_history = model::source::NoteEntry::read(notes)?;
+            let note_status_history = source::read_note_entries(notes)?;
             let mut note_entries = model::NoteEntry::read(&notes_data)?;
 
-            for model::source::NoteEntry {
+            for NoteEntry {
                 note_id,
                 participant_id,
-                created_at_ms,
+                created_at,
                 tweet_id,
                 classification,
             } in note_status_history.values()
             {
-                let entry = note_entries.entry(*note_id).or_insert(NoteEntry {
+                let entry = note_entries.entry(*note_id).or_insert(model::NoteEntry {
                     note_id: *note_id,
-                    created_at_ms: 0,
+                    created_at: *created_at,
                     alias: None,
                     tweet_id: None,
                     user_id: None,
@@ -163,14 +166,14 @@ fn main() -> Result<(), Error> {
                     );
                 }
 
-                entry.created_at_ms = *created_at_ms;
-                entry.alias = aliases.get(participant_id).cloned();
+                entry.created_at = *created_at;
+                entry.alias = aliases.get(participant_id.as_ref()).cloned();
                 entry.tweet_id = Some(*tweet_id);
                 entry.misleading = Some(*classification == Classification::Misleading);
 
                 if entry.alias.is_none() {
                     let entries = unknown_aliases_values
-                        .entry(participant_id.clone())
+                        .entry(participant_id.to_string())
                         .or_default();
 
                     entries.push(*note_id);

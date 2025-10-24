@@ -6,6 +6,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+birdsite-birdwatch = { git = "ssh://git@github.com/travisbrown/birdsite.git" }
 chrono = { version = "0.4", features = ["serde"] }
 clap = { version = "4", features = ["derive"] }
 cli-helpers = "0.1"

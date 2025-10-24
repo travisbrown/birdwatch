@@ -1,27 +1,8 @@
+use chrono::{serde::ts_milliseconds, DateTime, Utc};
 use itertools::Itertools;
-use std::collections::{btree_map::Entry as BEntry, hash_map::Entry as HEntry, HashMap, BTreeMap};
+use std::collections::{btree_map::Entry as BEntry, hash_map::Entry as HEntry, BTreeMap, HashMap};
 use std::fs::File;
 use std::path::Path;
-
-pub mod source;
-
-#[derive(Clone, Copy, Debug, Eq, PartialEq, serde::Deserialize, serde::Serialize)]
-pub enum Status {
-    #[serde(rename = "NEEDS_MORE_RATINGS")]
-    NeedsMoreRatings,
-    #[serde(rename = "CURRENTLY_RATED_NOT_HELPFUL")]
-    NotHelpful,
-    #[serde(rename = "CURRENTLY_RATED_HELPFUL")]
-    Helpful,
-}
-
-#[derive(Clone, Copy, Debug, Eq, PartialEq, serde::Deserialize, serde::Serialize)]
-pub enum Classification {
-    #[serde(rename = "NOT_MISLEADING")]
-    NotMisleading,
-    #[serde(rename = "MISINFORMED_OR_POTENTIALLY_MISLEADING")]
-    Misleading,
-}
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd, serde::Deserialize, serde::Serialize)]
 pub struct ParticipantAliasMapping {
@@ -137,22 +118,12 @@ impl ParticipantNoteIdMapping {
     }
 }
 
-impl Status {
-    pub const fn is_helpful(self) -> Option<bool> {
-        match self {
-            Self::NeedsMoreRatings => None,
-            Self::NotHelpful => Some(false),
-            Self::Helpful => Some(true),
-        }
-    }
-}
-
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd, serde::Deserialize, serde::Serialize)]
 pub struct NoteEntry {
     #[serde(rename = "Note ID")]
     pub note_id: u64,
-    #[serde(rename = "Created at", alias = "Timestamp")]
-    pub created_at_ms: u64,
+    #[serde(rename = "Created at", alias = "Timestamp", with = "ts_milliseconds")]
+    pub created_at: DateTime<Utc>,
     #[serde(rename = "Alias")]
     pub alias: Option<String>,
     #[serde(rename = "Tweet ID")]
@@ -197,20 +168,18 @@ impl NoteEntry {
         Ok(entries)
     }
 
-    pub fn write<P: AsRef<Path>>(path: P, values: &BTreeMap<u64, Self>) -> Result<(), crate::Error> {
+    pub fn write<P: AsRef<Path>>(
+        path: P,
+        values: &BTreeMap<u64, Self>,
+    ) -> Result<(), crate::Error> {
         let mut values = values
             .values()
             .map(|note_entry| {
-                let timestamp = chrono::DateTime::from_timestamp_millis(
-                    i64::try_from(note_entry.created_at_ms).unwrap_or(i64::MAX),
-                )
-                .ok_or(crate::Error::InvalidTimestamp(note_entry.created_at_ms))?;
+                let month = note_entry.created_at.format("%Y-%m").to_string();
 
-                let month = timestamp.format("%Y-%m").to_string();
-
-                Ok((month, note_entry))
+                (month, note_entry)
             })
-            .collect::<Result<Vec<_>, crate::Error>>()?;
+            .collect::<Vec<_>>();
 
         values.sort();
 
