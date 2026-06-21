@@ -128,57 +128,60 @@ fn main() -> Result<(), Error> {
                 classification,
             } in note_status_history.values()
             {
-                let entry = note_entries.entry(*note_id).or_insert(model::NoteEntry {
-                    note_id: *note_id,
-                    created_at: *created_at,
-                    alias: None,
-                    tweet_id: None,
-                    user_id: None,
-                    misleading: None,
-                    helpful: None,
-                });
+                if *tweet_id >= 0 {
+                    let tweet_id = *tweet_id as u64;
+                    let entry = note_entries.entry(*note_id).or_insert(model::NoteEntry {
+                        note_id: *note_id,
+                        created_at: *created_at,
+                        alias: None,
+                        tweet_id: None,
+                        user_id: None,
+                        misleading: None,
+                        helpful: None,
+                    });
 
-                if entry
-                    .tweet_id
-                    .filter(|entry_tweet_id| entry_tweet_id != tweet_id)
-                    .is_some()
-                {
-                    ::log::error!(
-                        "Tweet ID changed (note ID: {}): {}, {}",
-                        note_id,
-                        entry.tweet_id.unwrap(),
-                        tweet_id,
-                    );
-                }
+                    if entry
+                        .tweet_id
+                        .filter(|entry_tweet_id| *entry_tweet_id != tweet_id)
+                        .is_some()
+                    {
+                        ::log::error!(
+                            "Tweet ID changed (note ID: {}): {}, {}",
+                            note_id,
+                            entry.tweet_id.unwrap(),
+                            tweet_id,
+                        );
+                    }
 
-                if entry
-                    .misleading
-                    .filter(|entry_misleading| {
-                        *entry_misleading != (*classification == Classification::Misleading)
-                    })
-                    .is_some()
-                {
-                    ::log::error!(
-                        "Classification changed (note ID: {}): {}, {:?}",
-                        note_id,
-                        entry.misleading.unwrap(),
-                        classification,
-                    );
-                }
+                    if entry
+                        .misleading
+                        .filter(|entry_misleading| {
+                            *entry_misleading != (*classification == Classification::Misleading)
+                        })
+                        .is_some()
+                    {
+                        ::log::error!(
+                            "Classification changed (note ID: {}): {}, {:?}",
+                            note_id,
+                            entry.misleading.unwrap(),
+                            classification,
+                        );
+                    }
 
-                entry.created_at = *created_at;
-                entry.alias = aliases.get(participant_id.as_ref()).cloned();
-                entry.tweet_id = Some(*tweet_id);
-                entry.misleading = Some(*classification == Classification::Misleading);
+                    entry.created_at = *created_at;
+                    entry.alias = aliases.get(participant_id.as_ref()).cloned();
+                    entry.tweet_id = Some(tweet_id);
+                    entry.misleading = Some(*classification == Classification::Misleading);
 
-                if entry.alias.is_none() {
-                    let entries = unknown_aliases_values
-                        .entry(participant_id.to_string())
-                        .or_default();
+                    if entry.alias.is_none() {
+                        let entries = unknown_aliases_values
+                            .entry(participant_id.to_string())
+                            .or_default();
 
-                    entries.push(*note_id);
-                    entries.sort_unstable();
-                    entries.dedup();
+                        entries.push(*note_id);
+                        entries.sort_unstable();
+                        entries.dedup();
+                    }
                 }
             }
 
